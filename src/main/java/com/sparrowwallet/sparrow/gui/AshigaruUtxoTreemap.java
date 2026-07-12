@@ -14,6 +14,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -417,11 +419,16 @@ public class AshigaruUtxoTreemap extends Region {
     // -------------------------------------------------------------------------
 
     private static final class Tile extends StackPane {
+        // Animated Whirlpool logo shown top-right while a UTXO is actively mixing.
+        private static final Image WHIRLPOOL_GIF =
+                new Image("/image/Ashigaru_Whirlpool_Logo_GIF_White_On_Transparent.gif", 16, 16, true, true);
+
         private final AshigaruWalletController.UtxoRow row;
         private final ObservableValue<Boolean> showMixInfo;
         private final double feeRate;
         private final Label valueLabel = new Label();
         private final Region mixDot = new Region();
+        private final ImageView mixIcon = new ImageView(WHIRLPOOL_GIF);
         private final Tooltip tooltip = new Tooltip();
         private final ChangeListener<Boolean> selectionListener;
 
@@ -444,6 +451,11 @@ public class AshigaruUtxoTreemap extends Region {
             StackPane.setAlignment(mixDot, Pos.TOP_RIGHT);
             StackPane.setMargin(mixDot, new Insets(4, 4, 0, 0));
             getChildren().add(mixDot);
+
+            mixIcon.setMouseTransparent(true);
+            StackPane.setAlignment(mixIcon, Pos.TOP_RIGHT);
+            StackPane.setMargin(mixIcon, new Insets(3, 3, 0, 0));
+            getChildren().add(mixIcon);
 
             tooltip.setShowDelay(Duration.millis(200));
             Tooltip.install(this, tooltip);
@@ -485,23 +497,23 @@ public class AshigaruUtxoTreemap extends Region {
         }
 
         void refresh() {
-            mixDot.getStyleClass().removeAll("mix-active", "mix-done", "mix-unmixed");
+            mixDot.getStyleClass().removeAll("mix-done", "mix-unmixed");
             boolean show = showMixInfo != null && Boolean.TRUE.equals(showMixInfo.getValue());
-            // Kept managed so the StackPane keeps it in the top-right corner; only visibility toggles.
+            // Nodes are kept managed so the StackPane keeps them in the top-right corner;
+            // only visibility toggles. While actively mixing, show the animated Whirlpool
+            // logo (in place of the old red dot); otherwise a small mixed/unmixed dot.
+            UtxoEntry.MixStatus mixStatus = show ? row.utxoEntry.getMixStatus() : null;
+            boolean mixing = show && mixStatus != null
+                    && (mixStatus.getMixProgress() != null || mixStatus.getNextMixUtxo() != null);
+
+            mixIcon.setVisible(mixing);
             if(!show) {
+                mixDot.setVisible(false);
+            } else if(mixing) {
                 mixDot.setVisible(false);
             } else {
                 mixDot.setVisible(true);
-                UtxoEntry.MixStatus mixStatus = row.utxoEntry.getMixStatus();
-                boolean mixing = mixStatus != null
-                        && (mixStatus.getMixProgress() != null || mixStatus.getNextMixUtxo() != null);
-                if(mixing) {
-                    mixDot.getStyleClass().add("mix-active");
-                } else if(mixStatus != null) {
-                    mixDot.getStyleClass().add("mix-done");
-                } else {
-                    mixDot.getStyleClass().add("mix-unmixed");
-                }
+                mixDot.getStyleClass().add(mixStatus != null ? "mix-done" : "mix-unmixed");
             }
             tooltip.setText(buildDetailText());
         }

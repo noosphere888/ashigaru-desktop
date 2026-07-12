@@ -179,9 +179,9 @@ HOW TO USE
   [ ] "Model fee rate" slider starts near the current network rate;
       dragging it higher pushes small UTXOs toward Uneconomical /
       Unspendable and recolours live. A legend explains the tiers.
-  [ ] Premix/Postmix: each block shows a mix-state corner dot
-      (grey unmixed / red mixing / green mixed) that updates while a
-      mix runs.
+  [ ] Premix/Postmix: actively-mixing blocks show the spinning
+      Whirlpool logo in the top-right corner; mixed/unmixed blocks show
+      a small green/grey dot. The indicator updates live as a mix runs.
   [ ] Click a block to select it (accent border), click again to
       deselect; "Select All UTXOs" / "Clear Selection" toggles every
       block; "Mix Selected" queues the same UTXOs as before
