@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.control.FeeRangeSlider;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.*;
@@ -32,6 +33,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.slf4j.Logger;
@@ -60,8 +62,16 @@ public class AshigaruWalletController implements Initializable {
     @FXML private HBox syncingBar;
     @FXML private ToggleButton utxoViewBtn;
     @FXML private ToggleButton txnViewBtn;
-    @FXML private ListView<UtxoRow> utxoTable;
+    @FXML private VBox utxoViewContainer;
+    @FXML private StackPane treemapHolder;
+    @FXML private VBox utxoEmptyState;
+    @FXML private FeeRangeSlider feeSlider;
+    @FXML private Label feeSliderLabel;
     @FXML private ListView<TxnRow> txnTable;
+
+    private AshigaruUtxoTreemap utxoTreemap;
+    private boolean feeRateUserAdjusted;   // true once the user drags the fee slider
+    private boolean adjustingFeeSlider;    // guards programmatic fee-slider updates
     @FXML private HBox mixButtonBox;
     @FXML private Button startMixBtn;
     @FXML private Button mixToBtn;
@@ -85,9 +95,22 @@ public class AshigaruWalletController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // UTXO list — responsive card view (one card per UTXO, never scrolls sideways)
-        utxoTable.setItems(utxoRows);
-        utxoTable.setCellFactory(lv -> new AshigaruUtxoCell(showMixInfo));
+        // UTXO view — proportional-block treemap (size = value, colour = fee-impact tier)
+        utxoTreemap = new AshigaruUtxoTreemap();
+        utxoTreemap.setItems(utxoRows);
+        utxoTreemap.setShowMixInfo(showMixInfo);
+        // Add below the empty-state overlay so the overlay shows through when there are no UTXOs
+        treemapHolder.getChildren().add(0, utxoTreemap);
+
+        // Fee-model slider: drag to see which UTXOs become uneconomical at higher fees
+        Double defaultRate = AppServices.getDefaultFeeRate();
+        setFeeSliderRate(defaultRate != null ? defaultRate : feeSlider.getFeeRate());
+        feeSlider.valueProperty().addListener((obs, o, n) -> {
+            if(adjustingFeeSlider) return;
+            feeRateUserAdjusted = true;
+            utxoTreemap.setFeeRate(feeSlider.getFeeRate());
+            updateFeeSliderLabel();
+        });
 
         // Transaction list — responsive card view
         txnTable.setItems(txnRows);
@@ -240,8 +263,8 @@ public class AshigaruWalletController implements Initializable {
         receiveBtn.setManaged(isDeposit);
         receiveCta.setVisible(isDeposit);
         receiveCta.setManaged(isDeposit);
-        selectAllUtxosBtn.setVisible(isDeposit && utxoTable.isVisible());
-        selectAllUtxosBtn.setManaged(isDeposit && utxoTable.isVisible());
+        selectAllUtxosBtn.setVisible(isDeposit && isUtxoModeVisible());
+        selectAllUtxosBtn.setManaged(isDeposit && isUtxoModeVisible());
 
         // Badbank info bar
         boolean isBadbank = wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_BADBANK;
@@ -283,6 +306,13 @@ public class AshigaruWalletController implements Initializable {
             UtxoRow row = new UtxoRow(date, output, address, label, value, utxoEntry);
             row.selected.addListener((obs, o, n) -> updateActionButtons());
             utxoRows.add(row);
+        }
+
+        // Empty-state overlay shows through the treemap holder when there are no UTXOs
+        boolean empty = utxoRows.isEmpty();
+        if(utxoEmptyState != null) {
+            utxoEmptyState.setVisible(empty);
+            utxoEmptyState.setManaged(empty);
         }
     }
 
@@ -414,7 +444,7 @@ public class AshigaruWalletController implements Initializable {
         Wallet wallet = activeAccountForm.getWallet();
         boolean isDeposit = wallet.isMasterWallet() || wallet.getStandardAccountType() == null
                 || wallet.getStandardAccountType() == StandardAccount.ACCOUNT_0;
-        boolean show = isDeposit && utxoTable.isVisible();
+        boolean show = isDeposit && isUtxoModeVisible();
         selectAllUtxosBtn.setVisible(show);
         selectAllUtxosBtn.setManaged(show);
         boolean anySelected = utxoRows.stream().anyMatch(r -> r.selected.get());
@@ -423,7 +453,7 @@ public class AshigaruWalletController implements Initializable {
     }
 
     private void updateActionButtons() {
-        boolean utxosVisible = utxoTable.isVisible();
+        boolean utxosVisible = isUtxoModeVisible();
 
         if (!utxosVisible) {
             mixSelectedBtn.setVisible(false);
@@ -432,6 +462,29 @@ public class AshigaruWalletController implements Initializable {
             updateMixSelectedButton();
         }
         updateSelectAllButton();
+    }
+
+    /** True when the UTXO treemap (rather than the transaction list) is the active view. */
+    private boolean isUtxoModeVisible() {
+        return utxoViewContainer != null && utxoViewContainer.isVisible();
+    }
+
+    /** Sets the fee slider without tripping the user-adjusted flag, then recolours the treemap. */
+    private void setFeeSliderRate(double rate) {
+        if(feeSlider == null) return;
+        adjustingFeeSlider = true;
+        feeSlider.setFeeRate(rate);
+        adjustingFeeSlider = false;
+        if(utxoTreemap != null) {
+            utxoTreemap.setFeeRate(feeSlider.getFeeRate());
+        }
+        updateFeeSliderLabel();
+    }
+
+    private void updateFeeSliderLabel() {
+        if(feeSliderLabel == null || feeSlider == null) return;
+        double rate = feeSlider.getFeeRate();
+        feeSliderLabel.setText(String.format(Locale.ROOT, rate < 10 ? "%.1f sat/vB" : "%.0f sat/vB", rate));
     }
 
     // -------------------------------------------------------------------------
@@ -456,8 +509,8 @@ public class AshigaruWalletController implements Initializable {
     @FXML
     private void onViewToggle() {
         boolean showUtxos = utxoViewBtn.isSelected();
-        utxoTable.setVisible(showUtxos);
-        utxoTable.setManaged(showUtxos);
+        utxoViewContainer.setVisible(showUtxos);
+        utxoViewContainer.setManaged(showUtxos);
         txnTable.setVisible(!showUtxos);
         txnTable.setManaged(!showUtxos);
         if (!showUtxos) {
@@ -470,7 +523,7 @@ public class AshigaruWalletController implements Initializable {
     private void onSelectAllUtxos() {
         boolean selectAll = utxoRows.stream().noneMatch(r -> r.selected.get());
         utxoRows.forEach(r -> r.selected.set(selectAll));
-        utxoTable.refresh();
+        if(utxoTreemap != null) utxoTreemap.refresh();
         updateActionButtons();
     }
 
@@ -711,7 +764,7 @@ public class AshigaruWalletController implements Initializable {
                             } else {
                                 row.utxoEntry.setMixProgress(event.getMixProgress());
                             }
-                            utxoTable.refresh();
+                            if(utxoTreemap != null) utxoTreemap.refresh();
                         });
                 trackCoordinatorReachability(event);
             });
@@ -762,6 +815,18 @@ public class AshigaruWalletController implements Initializable {
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         Platform.runLater(this::updateMixToButton);
+    }
+
+    @Subscribe
+    public void feesUpdated(FeeRatesUpdatedEvent event) {
+        // Track the live network rate unless the user has dragged the slider themselves.
+        if(feeRateUserAdjusted) return;
+        Platform.runLater(() -> {
+            Double rate = AppServices.getDefaultFeeRate();
+            if(rate != null) {
+                setFeeSliderRate(rate);
+            }
+        });
     }
 
     @Subscribe

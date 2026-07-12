@@ -82,10 +82,10 @@ HOW TO USE
 
 
 --------------------------------------------------------------------
- 5. TRANSACTION & UTXO CARDS
+ 5. TRANSACTION CARDS & UTXO TREEMAP
 --------------------------------------------------------------------
-  [ ] Transactions and UTXOs tabs render as card lists (not tables)
-      and are responsive to width.
+  [ ] Transactions tab renders as a responsive card list (not a table).
+  [ ] UTXOs tab renders as the fee-impact treemap (see section 12).
   [ ] BIP47 receive shows PayNym name + abbreviated payment code and
       the PayNym avatar; avatars/placeholders are aligned.
   [ ] Unlock dialog shows the master fingerprint without clipping.
@@ -167,6 +167,30 @@ HOW TO USE
   [ ] Delete-button text is white/legible; logos are crisp.
   [ ] Account buttons toggle the center view; wallet selector switches
       wallets.
+
+
+--------------------------------------------------------------------
+ 12. UTXO FEE-IMPACT TREEMAP  (new in 1.1.1)
+--------------------------------------------------------------------
+  [ ] UTXOs view shows blocks sized by BTC value: the largest UTXO is
+      the biggest block; resizing the window reflows the blocks.
+  [ ] Blocks are grouped under severity headers (Optimal .. Unspendable)
+      coloured green -> red; each header shows count + total BTC.
+  [ ] "Model fee rate" slider starts near the current network rate;
+      dragging it higher pushes small UTXOs toward Uneconomical /
+      Unspendable and recolours live. A legend explains the tiers.
+  [ ] Premix/Postmix: each block shows a mix-state corner dot
+      (grey unmixed / red mixing / green mixed) that updates while a
+      mix runs.
+  [ ] Click a block to select it (accent border), click again to
+      deselect; "Select All UTXOs" / "Clear Selection" toggles every
+      block; "Mix Selected" queues the same UTXOs as before
+      (Deposit -> Tx0, Postmix -> remix).
+  [ ] Hover shows a tooltip (value, fee impact, address, outpoint,
+      date, mix stage). Double-click / right-click opens the details
+      popover; editing the label there persists; copy buttons work.
+  [ ] Empty account shows the "no UTXOs yet" message + Receive CTA;
+      while syncing, blocks still render and Mix Selected is disabled.
 
 
 --------------------------------------------------------------------

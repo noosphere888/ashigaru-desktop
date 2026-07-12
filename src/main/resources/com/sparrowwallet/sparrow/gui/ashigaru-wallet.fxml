@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import com.sparrowwallet.sparrow.control.FeeRangeSlider?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
@@ -76,17 +77,52 @@
 
     <Separator/>
 
-    <!-- UTXO list — responsive card view -->
-    <ListView fx:id="utxoTable" styleClass="utxo-list" VBox.vgrow="ALWAYS">
-        <placeholder>
-            <VBox alignment="CENTER" spacing="14" styleClass="empty-state">
+    <!-- UTXO treemap view: fee-model bar + heatmap legend + proportional blocks -->
+    <VBox fx:id="utxoViewContainer" styleClass="utxo-treemap-container" spacing="0" VBox.vgrow="ALWAYS">
+        <!-- Fee-model bar: drag to see which UTXOs become uneconomical at higher fees -->
+        <HBox styleClass="fee-model-bar" alignment="CENTER_LEFT" spacing="12">
+            <padding><Insets top="10" right="20" bottom="4" left="20"/></padding>
+            <Label text="Model fee rate" styleClass="fee-model-caption"/>
+            <FeeRangeSlider fx:id="feeSlider" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            <Label fx:id="feeSliderLabel" text="—" styleClass="fee-model-value"/>
+        </HBox>
+
+        <!-- Fee-impact heatmap legend -->
+        <HBox styleClass="tier-legend" alignment="CENTER_LEFT" spacing="14">
+            <padding><Insets top="0" right="20" bottom="8" left="20"/></padding>
+            <HBox styleClass="tier-legend-item" alignment="CENTER_LEFT" spacing="5">
+                <Region styleClass="tier-swatch tier-1"/><Label text="Optimal" styleClass="tier-legend-label"/>
+            </HBox>
+            <HBox styleClass="tier-legend-item" alignment="CENTER_LEFT" spacing="5">
+                <Region styleClass="tier-swatch tier-2"/><Label text="Economical" styleClass="tier-legend-label"/>
+            </HBox>
+            <HBox styleClass="tier-legend-item" alignment="CENTER_LEFT" spacing="5">
+                <Region styleClass="tier-swatch tier-3"/><Label text="Marginal" styleClass="tier-legend-label"/>
+            </HBox>
+            <HBox styleClass="tier-legend-item" alignment="CENTER_LEFT" spacing="5">
+                <Region styleClass="tier-swatch tier-4"/><Label text="Expensive" styleClass="tier-legend-label"/>
+            </HBox>
+            <HBox styleClass="tier-legend-item" alignment="CENTER_LEFT" spacing="5">
+                <Region styleClass="tier-swatch tier-5"/><Label text="Uneconomical" styleClass="tier-legend-label"/>
+            </HBox>
+            <HBox styleClass="tier-legend-item" alignment="CENTER_LEFT" spacing="5">
+                <Region styleClass="tier-swatch tier-6"/><Label text="Unspendable" styleClass="tier-legend-label"/>
+            </HBox>
+        </HBox>
+
+        <Separator/>
+
+        <!-- Blocks area. The treemap is added here programmatically; the empty-state
+             overlay shows through when there are no UTXOs. -->
+        <StackPane fx:id="treemapHolder" VBox.vgrow="ALWAYS">
+            <VBox fx:id="utxoEmptyState" alignment="CENTER" spacing="14" styleClass="empty-state">
                 <Label text="▼" styleClass="empty-state-icon"/>
                 <Label text="You don't have any UTXOs yet" styleClass="empty-state-message"/>
                 <Button fx:id="receiveCta" text="Receive Funds" onAction="#onReceiveCta"
                         styleClass="primary-btn"/>
             </VBox>
-        </placeholder>
-    </ListView>
+        </StackPane>
+    </VBox>
 
     <!-- Transaction history list (hidden by default) -->
     <ListView fx:id="txnTable" styleClass="utxo-list" VBox.vgrow="ALWAYS" visible="false" managed="false">

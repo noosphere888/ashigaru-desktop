@@ -383,6 +383,75 @@
 .card-secondary { -fx-text-fill: -ag-text-dim;   -fx-font-size: 12px; }
 .card-faint     { -fx-text-fill: -ag-text-faint; -fx-font-size: 11px; }
 
+/* ── UTXO fee-impact heatmap treemap ─────────────────────────────────────────
+   Size = value, colour = fee-impact tier (green Optimal → dark-red Unspendable).
+   Tier hexes are literals (not -ag-* tokens) since they're GUI-only and so don't
+   need mirroring into general.css / darktheme.css.
+   ──────────────────────────────────────────────────────────────────────────── */
+.utxo-treemap-container { -fx-background-color: -ag-bg; }
+
+/* Fee-model bar + heatmap legend */
+.fee-model-bar     { -fx-background-color: -ag-bg-mid; }
+.fee-model-caption { -fx-text-fill: -ag-text-dim; -fx-font-size: 11px; -fx-font-weight: bold; }
+.fee-model-value   { -fx-text-fill: -ag-accent;   -fx-font-size: 12px; -fx-font-weight: bold; -fx-min-width: 74; }
+.tier-legend         { -fx-background-color: -ag-bg-mid; }
+.tier-legend-label   { -fx-text-fill: -ag-text-faint; -fx-font-size: 10px; }
+.tier-swatch         { -fx-min-width: 11; -fx-min-height: 11; -fx-max-width: 11; -fx-max-height: 11; -fx-background-radius: 2; }
+
+/* Tier palette (utxo-modeller heatmap) */
+.tier-swatch.tier-1, .utxo-tile.tier-1 { -fx-background-color: #10B981; }
+.tier-swatch.tier-2, .utxo-tile.tier-2 { -fx-background-color: #84CC16; }
+.tier-swatch.tier-3, .utxo-tile.tier-3 { -fx-background-color: #EAB308; }
+.tier-swatch.tier-4, .utxo-tile.tier-4 { -fx-background-color: #F97316; }
+.tier-swatch.tier-5, .utxo-tile.tier-5 { -fx-background-color: #EF4444; }
+.tier-swatch.tier-6, .utxo-tile.tier-6 { -fx-background-color: #991B1B; }
+
+.utxo-treemap { -fx-background-color: -ag-bg; }
+
+/* Severity group container */
+.tier-group        { -fx-background-color: transparent; -fx-border-width: 1; -fx-background-radius: 4; -fx-border-radius: 4; }
+.tier-group.tier-1 { -fx-border-color: derive(#10B981, -55%); }
+.tier-group.tier-2 { -fx-border-color: derive(#84CC16, -55%); }
+.tier-group.tier-3 { -fx-border-color: derive(#EAB308, -55%); }
+.tier-group.tier-4 { -fx-border-color: derive(#F97316, -55%); }
+.tier-group.tier-5 { -fx-border-color: derive(#EF4444, -55%); }
+.tier-group.tier-6 { -fx-border-color: derive(#991B1B, -30%); }
+.tier-group-header { -fx-text-fill: -ag-text-dim; -fx-font-size: 10px; -fx-font-weight: bold; }
+
+/* Individual UTXO tile */
+.utxo-tile {
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-border-color: rgba(0,0,0,0.35);
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+.utxo-tile:hover { -fx-border-color: rgba(255,255,255,0.65); }
+.utxo-tile.selected {
+    -fx-border-color: white;
+    -fx-border-width: 3;
+    -fx-effect: dropshadow(gaussian, rgba(204,17,17,0.9), 14, 0.5, 0, 0);
+}
+.utxo-tile-value {
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.9), 3, 0.4, 0, 1);
+}
+
+/* Mix-state corner dot (Premix/Postmix only), colours mirror .mix-badge */
+.utxo-tile-mixdot {
+    -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(0,0,0,0.5); -fx-border-width: 1; -fx-border-radius: 999;
+}
+.utxo-tile-mixdot.mix-active  { -fx-background-color: -ag-accent; }
+.utxo-tile-mixdot.mix-done    { -fx-background-color: -ag-green; }
+.utxo-tile-mixdot.mix-unmixed { -fx-background-color: -ag-text-faint; }
+
+/* UTXO details popover (double-click / right-click) */
+.utxo-detail-popover { -fx-background-color: -ag-bg-light; -fx-min-width: 300; }
+
 /* Whirlpool Stats chart: orange (first pool) + yellow (second pool) series */
 .stats-chart .default-color0.chart-series-line { -fx-stroke: #ff9500; -fx-stroke-width: 2px; }
 .stats-chart .default-color1.chart-series-line { -fx-stroke: #ffcc00; -fx-stroke-width: 2px; }
