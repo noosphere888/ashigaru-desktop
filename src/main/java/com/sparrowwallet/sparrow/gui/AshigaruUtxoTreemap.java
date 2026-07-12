@@ -419,18 +419,22 @@ public class AshigaruUtxoTreemap extends Region {
     // -------------------------------------------------------------------------
 
     private static final class Tile extends StackPane {
-        // Animated Whirlpool logo shown top-right while a UTXO is actively mixing.
+        // Animated Whirlpool logo filling the block while a UTXO is actively mixing.
+        // White-on-transparent, so the tile's tier colour still shows through.
         private static final Image WHIRLPOOL_GIF =
-                new Image("/image/Ashigaru_Whirlpool_Logo_GIF_White_On_Transparent.gif", 16, 16, true, true);
+                new Image("/image/Ashigaru_Whirlpool_Logo_GIF_White_On_Transparent.gif", 320, 320, true, true);
 
         private final AshigaruWalletController.UtxoRow row;
         private final ObservableValue<Boolean> showMixInfo;
         private final double feeRate;
         private final Label valueLabel = new Label();
+        private final Label labelText = new Label();
         private final Region mixDot = new Region();
         private final ImageView mixIcon = new ImageView(WHIRLPOOL_GIF);
         private final Tooltip tooltip = new Tooltip();
         private final ChangeListener<Boolean> selectionListener;
+        private final ChangeListener<String> labelListener;
+        private boolean hasLabel;
 
         Tile(AshigaruWalletController.UtxoRow row, UtxoFeeTier tier,
              ObservableValue<Boolean> showMixInfo, double feeRate) {
@@ -441,21 +445,26 @@ public class AshigaruUtxoTreemap extends Region {
             getStyleClass().addAll("utxo-tile", tier.getStyleClass());
             setMinSize(0, 0);
 
+            // Background layer (behind the text): the mixing logo, sized to fill in layoutChildren.
+            mixIcon.setMouseTransparent(true);
+            mixIcon.setPreserveRatio(true);
+            getChildren().add(mixIcon);
+
+            // Centered value + optional label, on top of the background.
             valueLabel.getStyleClass().add("utxo-tile-value");
             valueLabel.setText(row.value);
-            valueLabel.setMouseTransparent(true);
-            getChildren().add(valueLabel);
+            labelText.getStyleClass().add("utxo-tile-label");
+            VBox centerBox = new VBox(1, valueLabel, labelText);
+            centerBox.setAlignment(Pos.CENTER);
+            centerBox.setMouseTransparent(true);
+            getChildren().add(centerBox);
 
+            // Mixed / unmixed corner dot (hidden while the mixing logo is showing).
             mixDot.getStyleClass().add("utxo-tile-mixdot");
             mixDot.setMouseTransparent(true);
             StackPane.setAlignment(mixDot, Pos.TOP_RIGHT);
             StackPane.setMargin(mixDot, new Insets(4, 4, 0, 0));
             getChildren().add(mixDot);
-
-            mixIcon.setMouseTransparent(true);
-            StackPane.setAlignment(mixIcon, Pos.TOP_RIGHT);
-            StackPane.setMargin(mixIcon, new Insets(3, 3, 0, 0));
-            getChildren().add(mixIcon);
 
             tooltip.setShowDelay(Duration.millis(200));
             Tooltip.install(this, tooltip);
@@ -474,7 +483,11 @@ public class AshigaruUtxoTreemap extends Region {
 
             selectionListener = (o, a, b) -> updateSelectionStyle();
             row.selected.addListener(selectionListener);
+            // Keep the on-tile label in sync when edited (via the details popover or elsewhere).
+            labelListener = (o, a, b) -> updateLabel();
+            row.utxoEntry.labelProperty().addListener(labelListener);
             updateSelectionStyle();
+            updateLabel();
             refresh();
         }
 
@@ -485,6 +498,15 @@ public class AshigaruUtxoTreemap extends Region {
 
         void dispose() {
             row.selected.removeListener(selectionListener);
+            row.utxoEntry.labelProperty().removeListener(labelListener);
+        }
+
+        private void updateLabel() {
+            String lbl = row.utxoEntry.getLabel();
+            hasLabel = lbl != null && !lbl.isEmpty();
+            labelText.setText(hasLabel ? lbl : "");
+            labelText.setManaged(hasLabel);
+            requestLayout();
         }
 
         private void updateSelectionStyle() {
@@ -499,9 +521,8 @@ public class AshigaruUtxoTreemap extends Region {
         void refresh() {
             mixDot.getStyleClass().removeAll("mix-done", "mix-unmixed");
             boolean show = showMixInfo != null && Boolean.TRUE.equals(showMixInfo.getValue());
-            // Nodes are kept managed so the StackPane keeps them in the top-right corner;
-            // only visibility toggles. While actively mixing, show the animated Whirlpool
-            // logo (in place of the old red dot); otherwise a small mixed/unmixed dot.
+            // While actively mixing, fill the block with the animated Whirlpool logo;
+            // otherwise show a small mixed/unmixed dot in the top-right corner.
             UtxoEntry.MixStatus mixStatus = show ? row.utxoEntry.getMixStatus() : null;
             boolean mixing = show && mixStatus != null
                     && (mixStatus.getMixProgress() != null || mixStatus.getNextMixUtxo() != null);
@@ -520,8 +541,15 @@ public class AshigaruUtxoTreemap extends Region {
 
         @Override
         protected void layoutChildren() {
-            boolean big = getWidth() >= MIN_LABEL_W && getHeight() >= MIN_LABEL_H;
+            double w = getWidth();
+            double h = getHeight();
+            boolean big = w >= MIN_LABEL_W && h >= MIN_LABEL_H;
             valueLabel.setVisible(big);
+            labelText.setVisible(big && hasLabel && h >= 44);
+            // Fill the block with the mixing logo (contain, centred by the StackPane).
+            double side = Math.min(w, h) * 0.92;
+            mixIcon.setFitWidth(side);
+            mixIcon.setFitHeight(side);
             super.layoutChildren();
         }
 

@@ -434,8 +434,13 @@
 }
 .utxo-tile-value {
     -fx-text-fill: white;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.9), 3, 0.4, 0, 1);
+}
+.utxo-tile-label {
+    -fx-text-fill: rgba(255,255,255,0.92);
+    -fx-font-size: 11px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.9), 3, 0.4, 0, 1);
 }
 

@@ -179,9 +179,12 @@ HOW TO USE
   [ ] "Model fee rate" slider starts near the current network rate;
       dragging it higher pushes small UTXOs toward Uneconomical /
       Unspendable and recolours live. A legend explains the tiers.
-  [ ] Premix/Postmix: actively-mixing blocks show the spinning
-      Whirlpool logo in the top-right corner; mixed/unmixed blocks show
-      a small green/grey dot. The indicator updates live as a mix runs.
+  [ ] Premix/Postmix: actively-mixing blocks are filled with the
+      spinning Whirlpool logo (value/label stay centred on top);
+      mixed/unmixed blocks show a small green/grey corner dot. The
+      indicator updates live as a mix runs.
+  [ ] A UTXO's label is shown centred under its value on the block
+      (when the block is tall enough).
   [ ] Click a block to select it (accent border), click again to
       deselect; "Select All UTXOs" / "Clear Selection" toggles every
       block; "Mix Selected" queues the same UTXOs as before
